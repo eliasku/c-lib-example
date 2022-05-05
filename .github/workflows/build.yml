@@ -42,6 +42,12 @@ jobs:
           path-type: inherit
           release: false
 
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        if: runner.os == 'Linux'
+        with:
+          version: "10.0"
+
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
@@ -54,7 +60,7 @@ jobs:
           key: ${{ runner.os }}
 
       - name: Build
-        run: build.sh
+        run: ./build.sh
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
@@ -65,5 +71,4 @@ jobs:
           fail_ci_if_error: true
           files: ./build/debug/coverage.txt
           flags: unittests
-          path_to_write_report: ./coverage/codecov_report.txt
           verbose: true

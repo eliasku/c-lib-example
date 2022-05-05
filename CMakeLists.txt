@@ -39,7 +39,7 @@ function(test_code_coverage TARGET_NAME)
         set(COVERAGE_OBJECT_FILES ${COVERAGE_OBJECT_FILES} PARENT_SCOPE)
 
         add_custom_target(coverage-collect-${TARGET_NAME}
-                COMMAND LLVM_PROFILE_FILE=${CMAKE_BINARY_DIR}/${TARGET_NAME}.profraw $<TARGET_FILE:${TARGET_NAME}>
+                COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE="${CMAKE_BINARY_DIR}/${TARGET_NAME}.profraw" $<TARGET_FILE:${TARGET_NAME}>
                 )
     endif ()
 endfunction()
