@@ -1,0 +1,69 @@
+name: Build
+
+on:
+  push:
+    # auto-update branches checked by created PR
+    branches-ignore:
+      - 'update/*'
+    paths-ignore:
+      - '.changeset/**'
+
+  # only test check PR to master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-cmake:
+    name: Build CMake targets
+    runs-on: ${{ matrix.os.os }}
+    strategy:
+      matrix:
+        os:
+          - { os: ubuntu-latest,  shell: bash }
+          - { os: macos-latest,   shell: bash }
+          - { os: windows-latest, shell: msys2 }
+    defaults:
+      run:
+        shell: '${{ matrix.os.shell }} {0}'
+    env:
+      OS: ${{ matrix.os.os }}
+      CC: clang
+      CXX: clang++
+      USE_CCACHE: 1
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - uses: msys2/setup-msys2@v2
+        if: runner.os == 'Windows'
+        with:
+          path-type: inherit
+          release: false
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Install CCache
+        uses: eliasku/install-ccache-action@master
+
+      - name: Setup CCache
+        uses: eliasku/ccache-action@master
+        with:
+          key: ${{ runner.os }}
+
+      - name: Build
+        run: build.sh
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/reports/
+          env_vars: os
+          fail_ci_if_error: true
+          files: ./build/debug/coverage.txt
+          flags: unittests
+          path_to_write_report: ./coverage/codecov_report.txt
+          verbose: true
