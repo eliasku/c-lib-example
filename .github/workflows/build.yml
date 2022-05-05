@@ -42,6 +42,11 @@ jobs:
           path-type: inherit
           release: false
 
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "10.0"
+
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@master
 
