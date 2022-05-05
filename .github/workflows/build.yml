@@ -54,7 +54,7 @@ jobs:
           key: ${{ runner.os }}
 
       - name: Build
-        run: build.sh
+        run: ./build.sh
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
