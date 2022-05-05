@@ -44,6 +44,7 @@ jobs:
 
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
+        if: runner.os == 'Linux'
         with:
           version: "10.0"
 
@@ -70,5 +71,4 @@ jobs:
           fail_ci_if_error: true
           files: ./build/debug/coverage.txt
           flags: unittests
-          path_to_write_report: ./coverage/codecov_report.txt
           verbose: true
