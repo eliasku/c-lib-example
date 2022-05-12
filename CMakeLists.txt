@@ -54,8 +54,10 @@ function(coverage_all)
             set(LLVM_PROFDATA llvm-profdata)
             set(LLVM_COV llvm-cov)
         endif ()
-        set(COVERAGE_IGNORE_PATTERN [/\\]test[/\\])
-
+        # 1) нужно дополнительно экранировать символы для командной строки для выражения [\/\\]test[\/\\]
+        set(COVERAGE_IGNORE_PATTERN [\\/\\\\]test[\\/\\\\])
+        # 2) альтернативно можно добавить VERBATIM опцию
+        # set(COVERAGE_IGNORE_PATTERN [\/\\]test[\/\\]
         add_custom_target(coverage
                 COMMAND ${LLVM_PROFDATA} merge -sparse ${COVERAGE_RAW_PROFILES} -o ${CMAKE_BINARY_DIR}/coverage.profdata
                 COMMAND ${LLVM_COV} show ${COVERAGE_OBJECT_FILES} -instr-profile=${CMAKE_BINARY_DIR}/coverage.profdata -ignore-filename-regex='${COVERAGE_IGNORE_PATTERN}' > ${CMAKE_BINARY_DIR}/coverage.txt
@@ -72,9 +74,9 @@ add_library(${PROJECT_NAME} STATIC
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_code_coverage(${PROJECT_NAME} PUBLIC)
 
-if(UNIT_TESTING)
+if (UNIT_TESTING)
     add_subdirectory(test)
-endif()
+endif ()
 
 coverage_all()
 
