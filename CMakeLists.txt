@@ -54,7 +54,7 @@ function(coverage_all)
             set(LLVM_PROFDATA llvm-profdata)
             set(LLVM_COV llvm-cov)
         endif ()
-        set(COVERAGE_IGNORE_PATTERN /test/)
+        set(COVERAGE_IGNORE_PATTERN [/\\]test[/\\])
 
         add_custom_target(coverage
                 COMMAND ${LLVM_PROFDATA} merge -sparse ${COVERAGE_RAW_PROFILES} -o ${CMAKE_BINARY_DIR}/coverage.profdata
