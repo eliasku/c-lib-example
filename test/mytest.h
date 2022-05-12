@@ -176,7 +176,7 @@ void simple_report(FILE* f, struct global_stats* stats) {
     fprintf(f, "=================\n\n");
 }
 
-inline static int mytest_run_all(void) {
+inline static void mytest_run_all(void) {
     for (struct suite_stats* ss = global_stats.suites; ss; ss = ss->next) {
         current_suite_stats = ss;
         for (struct test_stats* ts = ss->tests; ts; ts = ts->next) {
