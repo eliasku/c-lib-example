@@ -74,6 +74,10 @@ add_library(${PROJECT_NAME} STATIC
 target_include_directories(${PROJECT_NAME} PUBLIC include)
 target_code_coverage(${PROJECT_NAME} PUBLIC)
 
+if ($ENV{CLION_IDE})
+    set(UNIT_TESTING ON)
+endif ()
+
 if (UNIT_TESTING)
     add_subdirectory(test)
 endif ()
