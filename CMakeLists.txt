@@ -1,86 +1,34 @@
 cmake_minimum_required(VERSION 3.19)
 project(mylib C)
 
-function(target_code_coverage TARGET_NAME)
-    # Argument parsing
-    set(options AUTO ALL EXTERNAL PUBLIC INTERFACE)
-    set(single_value_keywords COVERAGE_TARGET_NAME)
-    set(multi_value_keywords EXCLUDE OBJECTS ARGS)
-    cmake_parse_arguments(target_code_coverage "${options}" "${single_value_keywords}" "${multi_value_keywords}" ${ARGN})
-    # Set the visibility of target functions to PUBLIC, INTERFACE or default to PRIVATE
-    if (target_code_coverage_PUBLIC)
-        set(TARGET_VISIBILITY PUBLIC)
-    elseif (target_code_coverage_INTERFACE)
-        set(TARGET_VISIBILITY INTERFACE)
-    else ()
-        set(TARGET_VISIBILITY PRIVATE)
-    endif ()
+if ($ENV{CLION_IDE})
+    set(UNIT_TESTING ON)
+endif ()
 
-    if (NOT target_code_coverage_COVERAGE_TARGET_NAME)
-        # If a specific name was given, use that instead.
-        set(target_code_coverage_COVERAGE_TARGET_NAME ${TARGET_NAME})
-    endif ()
-
-    if (CODE_COVERAGE)
-        target_compile_options(${TARGET_NAME} ${TARGET_VISIBILITY} -fprofile-instr-generate -fcoverage-mapping)
-        target_link_options(${TARGET_NAME} ${TARGET_VISIBILITY} -fprofile-instr-generate -fcoverage-mapping)
-    endif ()
-endfunction()
-
-function(test_code_coverage TARGET_NAME)
-    if (CODE_COVERAGE)
-        list(APPEND COVERAGE_COLLECT_TARGETS coverage-collect-${TARGET_NAME})
-        set(COVERAGE_COLLECT_TARGETS ${COVERAGE_COLLECT_TARGETS} CACHE INTERNAL "COVERAGE_COLLECT_TARGETS")
-
-        list(APPEND COVERAGE_RAW_PROFILES ${CMAKE_BINARY_DIR}/${TARGET_NAME}.profraw)
-        set(COVERAGE_RAW_PROFILES ${COVERAGE_RAW_PROFILES} CACHE INTERNAL "COVERAGE_RAW_PROFILES")
-
-        list(APPEND COVERAGE_OBJECT_FILES -object $<TARGET_FILE:${TARGET_NAME}>)
-        set(COVERAGE_OBJECT_FILES ${COVERAGE_OBJECT_FILES} CACHE INTERNAL "COVERAGE_OBJECT_FILES")
-
-        add_custom_target(coverage-collect-${TARGET_NAME}
-                COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE="${CMAKE_BINARY_DIR}/${TARGET_NAME}.profraw" $<TARGET_FILE:${TARGET_NAME}>
-                )
-    endif ()
-endfunction()
-
-function(coverage_all)
-    # message(NOTICE "COVERAGE_RAW_PROFILES: ${COVERAGE_RAW_PROFILES}")
-    if (CODE_COVERAGE)
-        if (${CMAKE_SYSTEM_NAME} MATCHES "iOS|Darwin")
-            set(LLVM_PROFDATA xcrun llvm-profdata)
-            set(LLVM_COV xcrun llvm-cov)
-        else ()
-            set(LLVM_PROFDATA llvm-profdata)
-            set(LLVM_COV llvm-cov)
-        endif ()
-        # 1) нужно дополнительно экранировать символы для командной строки для выражения [\/\\]test[\/\\]
-        set(COVERAGE_IGNORE_PATTERN [\\/\\\\]test[\\/\\\\])
-        # 2) альтернативно можно добавить VERBATIM опцию
-        # set(COVERAGE_IGNORE_PATTERN [\/\\]test[\/\\]
-        add_custom_target(coverage
-                COMMAND ${LLVM_PROFDATA} merge -sparse ${COVERAGE_RAW_PROFILES} -o ${CMAKE_BINARY_DIR}/coverage.profdata
-                COMMAND ${LLVM_COV} show ${COVERAGE_OBJECT_FILES} -instr-profile=${CMAKE_BINARY_DIR}/coverage.profdata -ignore-filename-regex='${COVERAGE_IGNORE_PATTERN}' > ${CMAKE_BINARY_DIR}/coverage.txt
-                COMMAND ${LLVM_COV} report ${COVERAGE_OBJECT_FILES} -instr-profile=${CMAKE_BINARY_DIR}/coverage.profdata -use-color=1 -ignore-filename-regex='${COVERAGE_IGNORE_PATTERN}'
-                DEPENDS ${COVERAGE_COLLECT_TARGETS}
-                )
-    endif ()
-endfunction()
+include(cmake/code-coverage.cmake)
 
 add_library(${PROJECT_NAME} STATIC
         src/mylib-all.c
         )
 
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC include PRIVATE test)
 target_code_coverage(${PROJECT_NAME} PUBLIC)
 
-if ($ENV{CLION_IDE})
-    set(UNIT_TESTING ON)
+if (UNIT_TESTING)
+    enable_testing()
+
+    add_subdirectory(test)
 endif ()
 
 if (UNIT_TESTING)
-    add_subdirectory(test)
-endif ()
+    add_executable(${PROJECT_NAME}-test
+            src/mylib-all.c
+            )
+    target_compile_definitions(${PROJECT_NAME}-test PUBLIC UNIT_TESTING)
+    target_include_directories(${PROJECT_NAME}-test PUBLIC include PRIVATE test)
+    add_test(NAME ${PROJECT_NAME}-test COMMAND $<TARGET_FILE:${PROJECT_NAME}-test>)
+    test_code_coverage(${PROJECT_NAME}-test)
+endif()
 
 coverage_all()
 
